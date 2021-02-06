@@ -1,17 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Text.Json;
 using Elasticsearch.Net;
 using Pocosearch.Internals;
+using Pocosearch.Utils;
 
 namespace Pocosearch
 {
     /* @TODO: check for success with every response (see error handling section) */
     /* @TODO: search-as-you-type */
     /* @TODO: async methods */
-    /* @TODO: embedded Elasticsearch deployment */
     /* @TODO: filter sources (e.g. WHERE author = 'bob') */
     /* @TODO: take Boost, Exclude into account */
     public class PocosearchClient : IPocosearchClient

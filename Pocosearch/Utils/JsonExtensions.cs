@@ -1,7 +1,7 @@
 using System;
 using System.Text.Json;
 
-namespace Pocosearch.Internals
+namespace Pocosearch.Utils
 {
     public static class JsonExtensions
     {

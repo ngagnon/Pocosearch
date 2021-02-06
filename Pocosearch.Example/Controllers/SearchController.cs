@@ -15,7 +15,12 @@ namespace Pocosearch.Example.Controllers
     [ApiController]
     public class SearchController : ControllerBase
     {
-        private readonly PocosearchClient client = new PocosearchClient();
+        private readonly PocosearchClient client;
+
+        public SearchController(PocosearchClient client)
+        {
+            this.client = client;
+        }
 
         [HttpPost, Route("articles/seed")]
         public void SeedArticles()

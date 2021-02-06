@@ -1,7 +1,7 @@
 using System;
 using System.Reflection;
 
-namespace Pocosearch.Internals
+namespace Pocosearch.Utils
 {
     public static class AttributeExtensions
     {
