@@ -1,0 +1,20 @@
+#searchInput {
+    width: 50%;
+    font-size: 1em;
+    padding: 0.4em 0.6em;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+#searchButton {
+    padding: 0.5em;
+    background-color: white;
+    border: 1px solid #aaa;
+    border-radius: 5px;
+}
+
+.article {
+    border: 1px solid #ddd;
+    padding: 1em;
+    margin-bottom: 1em;
+}
