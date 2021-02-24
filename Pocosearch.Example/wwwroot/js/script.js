@@ -19,10 +19,11 @@ function renderArticles(articles, articleTemplate) {
     }
 }
 
-async function search(articleTemplate, excludeBody) {
+async function search(articleTemplate, excludeBody, boostTitle) {
     const response = await fetch('/articles?' + new URLSearchParams({
         search: searchInput.value,
-        excludeBody 
+        excludeBody,
+        boostTitle
     }));
 
     const articles = await response.json();
@@ -34,16 +35,17 @@ function initialize() {
     const seedButton = document.getElementById('seedButton');
     const searchButton = document.getElementById('searchButton');
     const excludeBodyCheckbox = document.getElementById('excludeBody');
+    const boostTitleCheckbox = document.getElementById('boostTitle');
 
     const articleTemplate = getArticleTemplate();
 
     searchButton.addEventListener('click', async (e) => {
-        search(articleTemplate, excludeBodyCheckbox.checked);
+        search(articleTemplate, excludeBodyCheckbox.checked, boostTitleCheckbox.checked);
     });
 
     searchInput.addEventListener('keypress', async (e) => {
         if (e.key === 'Enter') {
-            search(articleTemplate, excludeBodyCheckbox.checked);
+            search(articleTemplate, excludeBodyCheckbox.checked, boostTitleCheckbox.checked);
         }
     });
 

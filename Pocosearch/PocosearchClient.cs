@@ -10,7 +10,6 @@ namespace Pocosearch
 {
     /* @TODO: search-as-you-type */
     /* @TODO: filter sources (e.g. WHERE author = 'bob') */
-    /* @TODO: take Boost into account */
     public class PocosearchClient : IPocosearchClient
     {
         private readonly IElasticLowLevelClient elasticClient;
@@ -162,6 +161,7 @@ namespace Pocosearch
             var fields = fullTextFieldProvider
                 .GetFullTextFields(source.DocumentType)
                 .Where(x => !excludedFields.Contains(x))
+                .Select(x => ApplyBoost(x, source))
                 .ToList();
 
             object multi_match;
@@ -186,6 +186,12 @@ namespace Pocosearch
             }
 
             return new { multi_match };
+        }
+
+        private string ApplyBoost(string fieldName, Source source)
+        {
+            var boost = source.Fields.Find(x => x.Name == fieldName)?.Boost ?? 1;
+            return boost > 1 ? $"{fieldName}^{boost}" : fieldName;
         }
 
         private string GetIndexName<TDocument>()
