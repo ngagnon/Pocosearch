@@ -8,11 +8,9 @@ using Pocosearch.Utils;
 
 namespace Pocosearch
 {
-    /* @TODO: check for success with every response (see error handling section) */
     /* @TODO: search-as-you-type */
-    /* @TODO: async methods */
     /* @TODO: filter sources (e.g. WHERE author = 'bob') */
-    /* @TODO: take Boost, Exclude into account */
+    /* @TODO: take Boost into account */
     public class PocosearchClient : IPocosearchClient
     {
         private readonly IElasticLowLevelClient elasticClient;
@@ -97,27 +95,24 @@ namespace Pocosearch
 
         public IEnumerable<SearchResult> Search(SearchQuery query)
         {
-            /* @TODO: maybe change API to use AddSource<T>() and avoid this GetGenericArguments? */
-            var documentTypes = query.Sources
-                .Select(x => x.GetType().GetGenericArguments().First());
-
+            var documentTypes = query.Sources.Select(x => x.DocumentType);
             var indexNameMappings = documentTypes
                 .ToDictionary(x => GetIndexName(x));
             
-            var subQueries = documentTypes
-                .Select(type => new 
+            var subQueries = query.Sources
+                .Select(source => new 
                 {
                     @bool = new 
                     {
                         must = new List<object> 
                         { 
-                            GetSearchQuery(query.SearchString, query.Fuzziness, type) 
+                            GetDocumentQuery(query, source) 
                         },
                         filter = new 
                         {
                             term = new 
                             {
-                                _index = GetIndexName(type)
+                                _index = GetIndexName(source.DocumentType)
                             }
                         }
                     }
@@ -161,16 +156,21 @@ namespace Pocosearch
             }
         }
 
-        private object GetSearchQuery(string searchString, int fuzziness, Type documentType)
+        private object GetDocumentQuery(SearchQuery query, Source source)
         {
-            var fields = fullTextFieldProvider.GetFullTextFields(documentType);
+            var excludedFields = source.Fields.Where(x => x.Exclude).Select(x => x.Name).ToList();
+            var fields = fullTextFieldProvider
+                .GetFullTextFields(source.DocumentType)
+                .Where(x => !excludedFields.Contains(x))
+                .ToList();
+
             object multi_match;
 
-            if (fuzziness == Fuzziness.Auto)
+            if (query.Fuzziness == Fuzziness.Auto)
             {
                 multi_match = new 
                 {
-                    query = searchString,
+                    query = query.SearchString,
                     fuzziness = "AUTO",
                     fields
                 };
@@ -179,8 +179,8 @@ namespace Pocosearch
             {
                 multi_match = new 
                 {
-                    query = searchString,
-                    fuzziness,
+                    query = query.SearchString,
+                    fuzziness = query.Fuzziness,
                     fields
                 };
             }

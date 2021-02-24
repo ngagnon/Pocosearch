@@ -1,4 +1,7 @@
-﻿- Pocosearch could just be a really high-level interface for Elasticsearch,
-  kind of like what EasyNetQ does for RabbitMQ
-- Could have option to embed an Elasticsearch daemon for development
-  environments.
+﻿- Finish PocosearchClient
+- Async methods on PocosearchClient, EmbeddedSearchEngine
+- Handle errors from Elasticsearch API calls
+- Thread safety
+- Unit testing
+- Finish writing README
+- NuGet

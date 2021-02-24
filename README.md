@@ -1,0 +1,1 @@
+Pocosearch is an easy-to-use library for Elasticsearch,  kind of like what EasyNetQ does for RabbitMQ

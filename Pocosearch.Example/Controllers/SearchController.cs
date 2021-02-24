@@ -38,16 +38,13 @@ namespace Pocosearch.Example.Controllers
         }
 
         [HttpGet, Route("articles")]
-        public IEnumerable<SearchResult<Article>> GetArticles(string search)
+        public IEnumerable<SearchResult<Article>> GetArticles(string search, bool excludeBody = false)
         {
-            var query = new SearchQuery
-            {
-                SearchString = search,
-                Sources = new List<Source>
-                {
-                    new Source<Article>()
-                }
-            };
+            var query = new SearchQuery(search);
+            var articleSource = query.AddSource<Article>();
+
+            if (excludeBody)
+                articleSource.Exclude(x => x.Body);
 
             var searchResults = client.Search(query);
             return searchResults.GetDocumentsOfType<Article>();

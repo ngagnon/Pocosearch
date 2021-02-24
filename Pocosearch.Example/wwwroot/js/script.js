@@ -19,9 +19,10 @@ function renderArticles(articles, articleTemplate) {
     }
 }
 
-async function search(articleTemplate) {
+async function search(articleTemplate, excludeBody) {
     const response = await fetch('/articles?' + new URLSearchParams({
-        search: searchInput.value
+        search: searchInput.value,
+        excludeBody 
     }));
 
     const articles = await response.json();
@@ -30,35 +31,35 @@ async function search(articleTemplate) {
 
 function initialize() {
     const searchInput = document.getElementById('searchInput');
-    //const seedButton = document.getElementById('seed');
+    const seedButton = document.getElementById('seedButton');
     const searchButton = document.getElementById('searchButton');
+    const excludeBodyCheckbox = document.getElementById('excludeBody');
 
     const articleTemplate = getArticleTemplate();
 
     searchButton.addEventListener('click', async (e) => {
-        search(articleTemplate);
+        search(articleTemplate, excludeBodyCheckbox.checked);
     });
 
     searchInput.addEventListener('keypress', async (e) => {
         if (e.key === 'Enter') {
-            search(articleTemplate);
+            search(articleTemplate, excludeBodyCheckbox.checked);
         }
     });
 
     // @TODO: add back when search as you type checkbox is enabled
+    // @TODO: debounce */
     /*
     searchInput.addEventListener('input', (e) => {
         console.log(e.target.value);
     });
     */
 
-    /*
     seedButton.addEventListener('click', (e) => {
         fetch('/articles/seed', {
             method: 'post'
         });
     });
-    */
 }
 
 initialize();

@@ -10,7 +10,6 @@ namespace Pocosearch
 {
     /* @TODO: install right Java version automatically */
     /* @TODO: make version configurable */
-    /* @TODO: async methods */
     public class EmbeddedSearchEngine : ConnectionConfiguration, IDisposable
     {
         private static readonly string currentVersion = "7.10.2";
