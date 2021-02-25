@@ -29,7 +29,11 @@ namespace Pocosearch.Internals
 
         private bool IndexExists(string indexName)
         {
-            var response = elasticClient.Indices.Exists<BytesResponse>(indexName);
+            var response = elasticClient.Indices.Exists<StringResponse>(indexName);
+
+            if (!response.SuccessOrKnownError)
+                throw new PocosearchException(response);
+
             return response.Success;
         }
 
@@ -49,7 +53,10 @@ namespace Pocosearch.Internals
                 mappings = new { properties }
             };
 
-            elasticClient.Indices.Create<BytesResponse>(name, PostData.Serializable(index));
+            var response = elasticClient.Indices.Create<StringResponse>(name, PostData.Serializable(index));
+
+            if (!response.Success)
+                throw new PocosearchException(response);
         }
 
         private static string GetFieldType(PropertyInfo propertyInfo)

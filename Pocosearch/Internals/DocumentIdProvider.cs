@@ -8,14 +8,8 @@ namespace Pocosearch.Internals
 {
     public class DocumentIdProvider
     {
-        private readonly IElasticLowLevelClient elasticClient;
-        private readonly ConcurrentDictionary<Type, PropertyInfo> cache;
-
-        public DocumentIdProvider(IElasticLowLevelClient elasticClient)
-        {
-            this.elasticClient = elasticClient;
-            cache = new ConcurrentDictionary<Type, PropertyInfo>();
-        }
+        private readonly ConcurrentDictionary<Type, PropertyInfo> cache
+            = new ConcurrentDictionary<Type, PropertyInfo>();
 
         public string GetDocumentId<T>(T document)
         {

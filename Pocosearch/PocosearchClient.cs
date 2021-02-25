@@ -32,7 +32,7 @@ namespace Pocosearch
         private PocosearchClient(IElasticLowLevelClient elasticClient)
         {
             this.elasticClient = elasticClient;
-            documentIdProvider = new DocumentIdProvider(elasticClient);
+            documentIdProvider = new DocumentIdlasticClient();
             searchIndexProvider = new SearchIndexConfigurationProvider();
             indexManager = new IndexManager(elasticClient);
             fullTextFieldProvider = new FullTextFieldProvider();
@@ -49,7 +49,10 @@ namespace Pocosearch
             var indexName = GetIndexName<TDocument>();
             var id = documentIdProvider.GetDocumentId(document);
 
-            elasticClient.Index<StringResponse>(indexName, id, PostData.Serializable(document));
+            var response = elasticClient.Index<StringResponse>(indexName, id, PostData.Serializable(document));
+
+            if (!response.Success)
+                throw new PocosearchException(response);
         }
 
         public void BulkAddOrUpdate<TDocument>(IEnumerable<TDocument> documents)
@@ -69,7 +72,10 @@ namespace Pocosearch
                 ops.Add(document);
             }
 
-            elasticClient.Bulk<StringResponse>(indexName, PostData.MultiJson(ops));
+            var response = elasticClient.Bulk<StringResponse>(indexName, PostData.MultiJson(ops));
+
+            if (!response.Success)
+                throw new PocosearchException(response);
         }
 
         public void Remove<TDocument>(Guid documentId)
@@ -90,7 +96,10 @@ namespace Pocosearch
         public void Remove<TDocument>(string documentId)
         {
             var indexName = GetIndexName<TDocument>();
-            elasticClient.Delete<StringResponse>(indexName, documentId);
+            var response = elasticClient.Delete<StringResponse>(indexName, documentId);
+
+            if (!response.Success)
+                throw new PocosearchException(response);
         }
 
         public IEnumerable<SearchResult> Search(SearchQuery query)
@@ -133,6 +142,9 @@ namespace Pocosearch
 
             var searchResponse = elasticClient.Search<StringResponse>(
                 PostData.Serializable(fullQuery));
+
+            if (!searchResponse.Success)
+                throw new PocosearchException(searchResponse);
 
             var body = searchResponse.Body;
 
