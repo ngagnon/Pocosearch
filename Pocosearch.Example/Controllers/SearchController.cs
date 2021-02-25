@@ -38,7 +38,7 @@ namespace Pocosearch.Example.Controllers
         }
 
         [HttpGet, Route("articles")]
-        public IEnumerable<SearchResult<Article>> GetArticles(string search, bool excludeBody = false, bool boostTitle = false)
+        public IEnumerable<SearchResult<Article>> GetArticles(string search, bool excludeBody = false, bool boostTitle = false, bool searchAsYouType = false)
         {
             var query = new SearchQuery(search);
             var articleSource = query.AddSource<Article>();
@@ -46,8 +46,20 @@ namespace Pocosearch.Example.Controllers
             if (excludeBody)
                 articleSource.Exclude(x => x.Body);
 
-            if (boostTitle)
-                articleSource.Configure(x => x.Title, boost: 10);
+            if (searchAsYouType)
+            {
+                articleSource.Exclude(x => x.Title);
+
+                if (boostTitle)
+                    articleSource.Configure(x => x.TitleAsYouType, boost: 10);
+            }
+            else
+            {
+                articleSource.Exclude(x => x.TitleAsYouType);
+
+                if (boostTitle)
+                    articleSource.Configure(x => x.Title, boost: 10);
+            }
 
             var searchResults = client.Search(query);
             return searchResults.GetDocumentsOfType<Article>();

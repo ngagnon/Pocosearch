@@ -10,6 +10,9 @@ namespace Pocosearch.Example.Models
         [FullText]
         public string Title { get; set; }
 
+        [FullText(SearchAsYouType = true)]
+        public string TitleAsYouType => Title; /* in your application you likely wouldn't need a separate field like this */
+
         [FullText]
         public string Body { get; set; }
 

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
 using Elasticsearch.Net;
 using Pocosearch.Internals;
@@ -8,8 +9,9 @@ using Pocosearch.Utils;
 
 namespace Pocosearch
 {
-    /* @TODO: search-as-you-type */
     /* @TODO: filter sources (e.g. WHERE author = 'bob') */
+    /* @TODO: SetupIndex should automatically add new fields, or crash with an exception
+       if a field was renamed or changed type, etc. */
     public class PocosearchClient : IPocosearchClient
     {
         private readonly IElasticLowLevelClient elasticClient;
@@ -36,7 +38,6 @@ namespace Pocosearch
             fullTextFieldProvider = new FullTextFieldProvider();
         }
 
-        /* @TODO: handle case where there are changes to mappings */
         public void SetupIndex<TDocument>()
         {
             var indexName = GetIndexName<TDocument>();
@@ -105,7 +106,7 @@ namespace Pocosearch
                     {
                         must = new List<object> 
                         { 
-                            GetDocumentQuery(query, source) 
+                            GetSourceQuery(query, source) 
                         },
                         filter = new 
                         {
@@ -117,7 +118,7 @@ namespace Pocosearch
                     }
                 });
 
-            var searchResponse = elasticClient.Search<StringResponse>(PostData.Serializable(new
+            var fullQuery = new
             {
                 from = 0,
                 size = query.Limit,
@@ -128,7 +129,10 @@ namespace Pocosearch
                         should = subQueries
                     }
                 }
-            }));
+            };
+
+            var searchResponse = elasticClient.Search<StringResponse>(
+                PostData.Serializable(fullQuery));
 
             var body = searchResponse.Body;
 
@@ -155,43 +159,75 @@ namespace Pocosearch
             }
         }
 
-        private object GetDocumentQuery(SearchQuery query, Source source)
+        private object GetSourceQuery(SearchQuery query, Source source)
         {
-            var excludedFields = source.Fields.Where(x => x.Exclude).Select(x => x.Name).ToList();
-            var fields = fullTextFieldProvider
-                .GetFullTextFields(source.DocumentType)
-                .Where(x => !excludedFields.Contains(x))
-                .Select(x => ApplyBoost(x, source))
+            var excludedFields = source.Fields
+                .Where(x => x.Exclude)
+                .Select(x => x.Name)
                 .ToList();
 
-            object multi_match;
+            var fields = fullTextFieldProvider
+                .GetFullTextFields(source.DocumentType)
+                .Where(x => !excludedFields.Contains(x.Name));
 
-            if (query.Fuzziness == Fuzziness.Auto)
+            var queries = fields
+                .Select(x => GetFieldQuery(query, source, x))
+                .ToList();
+
+            return new
             {
-                multi_match = new 
+                dis_max = new
                 {
-                    query = query.SearchString,
-                    fuzziness = "AUTO",
-                    fields
+                    queries,
+                    tie_breaker = 0.3
+                }
+            };
+        }
+
+        private object GetFieldQuery(SearchQuery query, Source source, FullTextAttribute field)
+        {
+            var boost = source.Fields.Find(x => x.Name == field.Name)?.Boost ?? 1;
+            var fuzziness = query.Fuzziness == Fuzziness.Auto ? "AUTO" : (object)query.Fuzziness;
+
+            if (!field.SearchAsYouType)
+            {
+                return new
+                {
+                    match = new Dictionary<string, object>
+                    {
+                        { 
+                            field.Name,
+                            new Dictionary<string, object>
+                            {
+                                { "query", query.SearchString },
+                                { "fuzziness", fuzziness },
+                                { "boost", boost }
+                            }
+                        }
+                    }
                 };
             }
             else
             {
-                multi_match = new 
+                var subFields = new List<string> 
+                { 
+                    field.Name, 
+                    $"{field.Name}._2gram", 
+                    $"{field.Name}._3gram" 
+                };
+
+                return new
                 {
-                    query = query.SearchString,
-                    fuzziness = query.Fuzziness,
-                    fields
+                    multi_match = new Dictionary<string, object>
+                    {
+                        { "query", query.SearchString },
+                        { "type", "bool_prefix" },
+                        { "fields", subFields },
+                        { "fuzziness", fuzziness },
+                        { "boost", boost }
+                    }
                 };
             }
-
-            return new { multi_match };
-        }
-
-        private string ApplyBoost(string fieldName, Source source)
-        {
-            var boost = source.Fields.Find(x => x.Name == fieldName)?.Boost ?? 1;
-            return boost > 1 ? $"{fieldName}^{boost}" : fieldName;
         }
 
         private string GetIndexName<TDocument>()

@@ -11,6 +11,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Pocosearch.Example.Models;
 
 namespace Pocosearch.Example
 {
@@ -26,14 +27,17 @@ namespace Pocosearch.Example
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            /*
             services.AddSingleton<EmbeddedSearchEngine>(EmbeddedSearchEngine.Launch());
             services.AddTransient<PocosearchClient>(
                 x => new PocosearchClient(x.GetRequiredService<EmbeddedSearchEngine>()));
+                */
+            services.AddTransient<PocosearchClient>();
             services.AddControllers();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, PocosearchClient pocosearch)
         {
             if (env.IsDevelopment())
             {
@@ -57,6 +61,8 @@ namespace Pocosearch.Example
             {
                 endpoints.MapControllers();
             });
+
+            pocosearch.SetupIndex<Article>();
         }
     }
 }

@@ -19,11 +19,12 @@ function renderArticles(articles, articleTemplate) {
     }
 }
 
-async function search(articleTemplate, excludeBody, boostTitle) {
+async function search(query, articleTemplate, excludeBody, boostTitle, searchAsYouType) {
     const response = await fetch('/articles?' + new URLSearchParams({
-        search: searchInput.value,
+        search: query,
         excludeBody,
-        boostTitle
+        boostTitle,
+        searchAsYouType
     }));
 
     const articles = await response.json();
@@ -36,31 +37,40 @@ function initialize() {
     const searchButton = document.getElementById('searchButton');
     const excludeBodyCheckbox = document.getElementById('excludeBody');
     const boostTitleCheckbox = document.getElementById('boostTitle');
+    const searchAsYouType = document.getElementById('searchAsYouType');
 
     const articleTemplate = getArticleTemplate();
 
-    searchButton.addEventListener('click', async (e) => {
-        search(articleTemplate, excludeBodyCheckbox.checked, boostTitleCheckbox.checked);
-    });
+    const searchListener = (e) => {
+        search(
+            searchInput.value, 
+            articleTemplate, 
+            excludeBodyCheckbox.checked, 
+            boostTitleCheckbox.checked,
+            searchAsYouType.checked
+        );
+    };
 
-    searchInput.addEventListener('keypress', async (e) => {
-        if (e.key === 'Enter') {
-            search(articleTemplate, excludeBodyCheckbox.checked, boostTitleCheckbox.checked);
+    searchButton.addEventListener('click', searchListener);
+
+    searchInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !searchAsYouType.checked) {
+            searchListener(e);
         }
     });
 
-    // @TODO: add back when search as you type checkbox is enabled
-    // @TODO: debounce */
-    /*
-    searchInput.addEventListener('input', (e) => {
-        console.log(e.target.value);
+    searchAsYouType.addEventListener('change', (e) => {
+        if (searchAsYouType.checked) {
+            searchInput.addEventListener('input', searchListener);
+            searchButton.disabled = true;
+        } else {
+            searchInput.removeEventListener('input', searchListener);
+            searchButton.disabled = false;
+        }
     });
-    */
 
     seedButton.addEventListener('click', (e) => {
-        fetch('/articles/seed', {
-            method: 'post'
-        });
+        fetch('/articles/seed', { method: 'post' });
     });
 }
 

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Pocosearch.Utils;
 
 namespace Pocosearch.Internals
@@ -8,9 +9,9 @@ namespace Pocosearch.Internals
     /* @TODO: thread safety */
     public class FullTextFieldProvider
     {
-        private readonly Dictionary<Type, string[]> cache = new Dictionary<Type, string[]>();
+        private readonly Dictionary<Type, FullTextAttribute[]> cache = new Dictionary<Type, FullTextAttribute[]>();
 
-        public IEnumerable<string> GetFullTextFields(Type documentType)
+        public IEnumerable<FullTextAttribute> GetFullTextFields(Type documentType)
         {
             if (!cache.TryGetValue(documentType, out var fields))
             {
@@ -21,11 +22,20 @@ namespace Pocosearch.Internals
             return fields;
         }
 
-        private static IEnumerable<string> FindFullTextFields(Type documentType)
+        private static IEnumerable<FullTextAttribute> FindFullTextFields(Type documentType)
         {
             return documentType.GetProperties()
-                .Where(p => p.GetCustomAttribute<FullTextAttribute>() != null)
-                .Select(p => p.Name);
+                .Select(p => new { Property = p, Attribute = p.GetCustomAttribute<FullTextAttribute>() })
+                .Where(x => x.Attribute != null)
+                .Select(x => FillName(x.Attribute, x.Property));
+        }
+
+        private static FullTextAttribute FillName(FullTextAttribute attribute, PropertyInfo prop)
+        {
+            if (string.IsNullOrEmpty(attribute.Name))
+                attribute.Name = prop.Name;
+
+            return attribute;
         }
     }
 }
