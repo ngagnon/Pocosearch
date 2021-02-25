@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -6,20 +7,14 @@ using Pocosearch.Utils;
 
 namespace Pocosearch.Internals
 {
-    /* @TODO: thread safety */
     public class FullTextFieldProvider
     {
-        private readonly Dictionary<Type, FullTextAttribute[]> cache = new Dictionary<Type, FullTextAttribute[]>();
+        private readonly ConcurrentDictionary<Type, FullTextAttribute[]> cache 
+            = new ConcurrentDictionary<Type, FullTextAttribute[]>();
 
         public IEnumerable<FullTextAttribute> GetFullTextFields(Type documentType)
         {
-            if (!cache.TryGetValue(documentType, out var fields))
-            {
-                fields = FindFullTextFields(documentType).ToArray();
-                cache[documentType] = fields;
-            }
-
-            return fields;
+            return cache.GetOrAdd(documentType, key => FindFullTextFields(key).ToArray());
         }
 
         private static IEnumerable<FullTextAttribute> FindFullTextFields(Type documentType)

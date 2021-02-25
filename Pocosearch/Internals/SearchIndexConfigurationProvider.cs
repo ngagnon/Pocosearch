@@ -1,23 +1,18 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Pocosearch.Utils;
 
 namespace Pocosearch.Internals
 {
-    /* @TODO: thread safety */
     public class SearchIndexConfigurationProvider
     {
-        private readonly Dictionary<Type, SearchIndexAttribute> cache = new Dictionary<Type, SearchIndexAttribute>();
+        private readonly ConcurrentDictionary<Type, SearchIndexAttribute> cache 
+            = new ConcurrentDictionary<Type, SearchIndexAttribute>();
 
         public SearchIndexAttribute GetSearchIndex(Type documentType)
         {
-            if (!cache.TryGetValue(documentType, out var attribute))
-            {
-                attribute = FindSearchIndex(documentType);
-                cache[documentType] = attribute;
-            }
-
-            return attribute;
+            return cache.GetOrAdd(documentType, key => FindSearchIndex(key));
         }
 
         private static SearchIndexAttribute FindSearchIndex(Type documentType)

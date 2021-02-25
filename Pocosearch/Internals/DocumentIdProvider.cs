@@ -1,36 +1,31 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection;
 using Elasticsearch.Net;
 
 namespace Pocosearch.Internals
 {
-    /* @TODO: thread safety */
     public class DocumentIdProvider
     {
         private readonly IElasticLowLevelClient elasticClient;
-        private readonly Dictionary<Type, PropertyInfo> cache;
+        private readonly ConcurrentDictionary<Type, PropertyInfo> cache;
 
         public DocumentIdProvider(IElasticLowLevelClient elasticClient)
         {
             this.elasticClient = elasticClient;
-            cache = new Dictionary<Type, PropertyInfo>();
+            cache = new ConcurrentDictionary<Type, PropertyInfo>();
         }
 
         public string GetDocumentId<T>(T document)
         {
-            if (!cache.TryGetValue(typeof(T), out var property))
-            {
-                property = FindDocumentIdProperty<T>();
-                cache[typeof(T)] = property;
-            }
-
+            var property = cache.GetOrAdd(typeof(T), key => FindDocumentIdProperty(key));
             return property.GetValue(document).ToString();
         }
 
-        private static PropertyInfo FindDocumentIdProperty<T>()
+        private static PropertyInfo FindDocumentIdProperty(Type documentType)
         {
-            var properties = typeof(T).GetProperties();
+            var properties = documentType.GetProperties();
 
             foreach (var property in properties)
             {
@@ -45,7 +40,7 @@ namespace Pocosearch.Internals
                 }
             }
 
-            throw new InvalidOperationException($"Document type {typeof(T).FullName} is missing a [DocumentId] attribute");
+            throw new InvalidOperationException($"Document type {documentType.FullName} is missing a [DocumentId] attribute");
         }
 
         private static bool IsValidDocumentId(Type propertyType)
