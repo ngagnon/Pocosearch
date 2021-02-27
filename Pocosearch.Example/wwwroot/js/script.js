@@ -19,12 +19,13 @@ function renderArticles(articles, articleTemplate) {
     }
 }
 
-async function search(query, articleTemplate, excludeBody, boostTitle, searchAsYouType) {
+async function search(query, articleTemplate, excludeBody, boostTitle, searchAsYouType, recentOnly) {
     const response = await fetch('/articles?' + new URLSearchParams({
         search: query,
         excludeBody,
         boostTitle,
-        searchAsYouType
+        searchAsYouType,
+        recentOnly
     }));
 
     const articles = await response.json();
@@ -38,6 +39,7 @@ function initialize() {
     const excludeBodyCheckbox = document.getElementById('excludeBody');
     const boostTitleCheckbox = document.getElementById('boostTitle');
     const searchAsYouType = document.getElementById('searchAsYouType');
+    const recentOnly = document.getElementById('recentOnly');
 
     const articleTemplate = getArticleTemplate();
 
@@ -47,7 +49,8 @@ function initialize() {
             articleTemplate, 
             excludeBodyCheckbox.checked, 
             boostTitleCheckbox.checked,
-            searchAsYouType.checked
+            searchAsYouType.checked,
+            recentOnly.checked
         );
     };
 

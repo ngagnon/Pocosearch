@@ -38,10 +38,19 @@ namespace Pocosearch.Example.Controllers
         }
 
         [HttpGet, Route("articles")]
-        public IEnumerable<SearchResult<Article>> GetArticles(string search, bool excludeBody = false, bool boostTitle = false, bool searchAsYouType = false)
+        public IEnumerable<SearchResult<Article>> GetArticles(
+            string search, 
+            bool excludeBody = false, 
+            bool boostTitle = false, 
+            bool searchAsYouType = false,
+            bool recentOnly = false
+        )
         {
             var query = new SearchQuery(search);
             var articleSource = query.AddSource<Article>();
+
+            if (recentOnly)
+                articleSource.Filter(x => x.PublishedOn >= DateTime.Now.AddYears(-10));
 
             if (excludeBody)
                 articleSource.Exclude(x => x.Body);

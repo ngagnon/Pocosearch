@@ -9,16 +9,16 @@ using Pocosearch.Utils;
 
 namespace Pocosearch
 {
-    /* @TODO: filter sources (e.g. WHERE author = 'bob') */
+    /* @TODO: multi-query */
     /* @TODO: SetupIndex should automatically add new fields, or crash with an exception
        if a field was renamed or changed type, etc. */
     public class PocosearchClient : IPocosearchClient
     {
         private readonly IElasticLowLevelClient elasticClient;
         private readonly DocumentIdProvider documentIdProvider;
+        private readonly SearchQueryBuilder searchQueryBuilder;
         private readonly SearchIndexConfigurationProvider searchIndexProvider;
         private readonly IndexManager indexManager;
-        private readonly FullTextFieldProvider fullTextFieldProvider;
 
         public PocosearchClient() : this(new ElasticLowLevelClient())
         {
@@ -32,10 +32,10 @@ namespace Pocosearch
         private PocosearchClient(IElasticLowLevelClient elasticClient)
         {
             this.elasticClient = elasticClient;
-            documentIdProvider = new DocumentIdlasticClient();
+            documentIdProvider = new DocumentIdProvider();
             searchIndexProvider = new SearchIndexConfigurationProvider();
+            searchQueryBuilder = new SearchQueryBuilder(searchIndexProvider);
             indexManager = new IndexManager(elasticClient);
-            fullTextFieldProvider = new FullTextFieldProvider();
         }
 
         public void SetupIndex<TDocument>()
@@ -108,40 +108,10 @@ namespace Pocosearch
             var indexNameMappings = documentTypes
                 .ToDictionary(x => GetIndexName(x));
             
-            var subQueries = query.Sources
-                .Select(source => new 
-                {
-                    @bool = new 
-                    {
-                        must = new List<object> 
-                        { 
-                            GetSourceQuery(query, source) 
-                        },
-                        filter = new 
-                        {
-                            term = new 
-                            {
-                                _index = GetIndexName(source.DocumentType)
-                            }
-                        }
-                    }
-                });
-
-            var fullQuery = new
-            {
-                from = 0,
-                size = query.Limit,
-                query = new
-                {
-                    @bool = new
-                    {
-                        should = subQueries
-                    }
-                }
-            };
+            var elasticQuery = searchQueryBuilder.Build(query); 
 
             var searchResponse = elasticClient.Search<StringResponse>(
-                PostData.Serializable(fullQuery));
+                PostData.Serializable(elasticQuery));
 
             if (!searchResponse.Success)
                 throw new PocosearchException(searchResponse);
@@ -168,77 +138,6 @@ namespace Pocosearch
                         Document = hit.GetProperty("_source").GetObject(documentType)
                     };
                 }
-            }
-        }
-
-        private object GetSourceQuery(SearchQuery query, Source source)
-        {
-            var excludedFields = source.Fields
-                .Where(x => x.Exclude)
-                .Select(x => x.Name)
-                .ToList();
-
-            var fields = fullTextFieldProvider
-                .GetFullTextFields(source.DocumentType)
-                .Where(x => !excludedFields.Contains(x.Name));
-
-            var queries = fields
-                .Select(x => GetFieldQuery(query, source, x))
-                .ToList();
-
-            return new
-            {
-                dis_max = new
-                {
-                    queries,
-                    tie_breaker = 0.3
-                }
-            };
-        }
-
-        private object GetFieldQuery(SearchQuery query, Source source, FullTextAttribute field)
-        {
-            var boost = source.Fields.Find(x => x.Name == field.Name)?.Boost ?? 1;
-            var fuzziness = query.Fuzziness == Fuzziness.Auto ? "AUTO" : (object)query.Fuzziness;
-
-            if (!field.SearchAsYouType)
-            {
-                return new
-                {
-                    match = new Dictionary<string, object>
-                    {
-                        { 
-                            field.Name,
-                            new Dictionary<string, object>
-                            {
-                                { "query", query.SearchString },
-                                { "fuzziness", fuzziness },
-                                { "boost", boost }
-                            }
-                        }
-                    }
-                };
-            }
-            else
-            {
-                var subFields = new List<string> 
-                { 
-                    field.Name, 
-                    $"{field.Name}._2gram", 
-                    $"{field.Name}._3gram" 
-                };
-
-                return new
-                {
-                    multi_match = new Dictionary<string, object>
-                    {
-                        { "query", query.SearchString },
-                        { "type", "bool_prefix" },
-                        { "fields", subFields },
-                        { "fuzziness", fuzziness },
-                        { "boost", boost }
-                    }
-                };
             }
         }
 

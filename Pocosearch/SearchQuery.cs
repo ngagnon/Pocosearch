@@ -36,6 +36,7 @@ namespace Pocosearch
     public abstract class Source
     {
         public abstract Type DocumentType { get; }
+        public Filter DocumentFilter { get; set; } = null;
         public List<Field> Fields { get; set; } = new List<Field>();
     }
 
@@ -43,9 +44,15 @@ namespace Pocosearch
     {
         public override Type DocumentType => typeof(TDocument);
 
+        public Source<TDocument> Filter(Expression<Func<TDocument, bool>> predicate)
+        {
+            DocumentFilter = ExpressionResolver.ResolvePredicate(predicate);
+            return this;
+        }
+
         public Source<TDocument> Configure<TMember>(Expression<Func<TDocument, TMember>> member, double boost = 1)
         {
-            var memberInfo = ReflectionHelper.ResolveProperty(member);
+            var memberInfo = ExpressionResolver.ResolveProperty(member);
             return Configure(memberInfo.Name, boost);
         }
 
@@ -58,7 +65,7 @@ namespace Pocosearch
 
         public Source<TDocument> Exclude<TMember>(Expression<Func<TDocument, TMember>> member)
         {
-            var memberInfo = ReflectionHelper.ResolveProperty(member);
+            var memberInfo = ExpressionResolver.ResolveProperty(member);
             return Exclude(memberInfo.Name);
         }
 
@@ -93,5 +100,37 @@ namespace Pocosearch
         {
             Name = name;
         }
+    }
+
+    public abstract class Filter
+    {}
+
+    public class ComparisonFilter : Filter
+    {
+        public string FieldName { get; set; }
+        public ComparisonType ComparisonType { get; set; }
+        public object Value { get; set; }
+    }
+
+    public enum ComparisonType
+    {
+        Equal,
+        NotEqual,
+        LessThan,
+        LessThanOrEqual,
+        GreaterThan,
+        GreaterThanOrEqual
+    }
+
+    public class FilterCombination : Filter
+    {
+        public List<Filter> Filters { get; set; }
+        public CombinationType CombinationType { get; set; }
+    }
+
+    public enum CombinationType
+    {
+        MatchAll,
+        MatchAny
     }
 }
