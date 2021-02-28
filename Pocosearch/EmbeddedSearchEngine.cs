@@ -4,12 +4,11 @@ using System.IO;
 using System.IO.Compression;
 using System.Net;
 using System.Runtime.InteropServices;
+using Elasticsearch.Net;
 using Pocosearch.Utils;
 
 namespace Pocosearch
 {
-    /* @TODO: install right Java version automatically */
-    /* @TODO: make version configurable */
     public class EmbeddedSearchEngine : ConnectionConfiguration, IDisposable
     {
         private static readonly string currentVersion = "7.10.2";

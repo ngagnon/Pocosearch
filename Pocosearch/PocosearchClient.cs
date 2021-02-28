@@ -22,7 +22,7 @@ namespace Pocosearch
         {
         }
 
-        public PocosearchClient(Pocosearch.ConnectionConfiguration settings)
+        public PocosearchClient(ConnectionConfiguration settings)
             : this(new ElasticLowLevelClient(settings))
         {
         }
