@@ -27,11 +27,13 @@ namespace Pocosearch.Example
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            // Uncomment to use the embedded Elasticsearch setup:
             /*
             services.AddSingleton<EmbeddedSearchEngine>(EmbeddedSearchEngine.Launch());
             services.AddTransient<PocosearchClient>(
                 x => new PocosearchClient(x.GetRequiredService<EmbeddedSearchEngine>()));
-                */
+            */
+
             services.AddTransient<PocosearchClient>();
             services.AddControllers();
         }

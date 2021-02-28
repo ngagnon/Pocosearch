@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
+using System.Threading.Tasks;
 using Elasticsearch.Net;
 using Pocosearch.Utils;
 
@@ -36,6 +37,26 @@ namespace Pocosearch.Internals
             }
         }
 
+        public async Task SetupIndexAsync<TDocument>(string indexName)
+        {
+            if (!indexes.ContainsKey(indexName))
+            {
+                if (!IndexExists(indexName))
+                {
+                    await CreateIndexAsync<TDocument>(indexName)
+                        .ConfigureAwait(false);
+                }
+                else
+                {
+                    await ValidateMappingsAsync<TDocument>(indexName)
+                        .ConfigureAwait(false);
+                }
+
+                indexes[indexName] = true;
+            }
+        }
+
+
         private bool IndexExists(string indexName)
         {
             var response = elasticClient.Indices.Exists<StringResponse>(indexName);
@@ -53,7 +74,24 @@ namespace Pocosearch.Internals
             if (!response.Success)
                 throw new ApiException(response);
 
-            using (var document = JsonDocument.Parse(response.Body))
+            CompareMappings<TDocument>(response.Body, indexName);
+        }
+
+        private async Task ValidateMappingsAsync<TDocument>(string indexName)
+        {
+            var response = await elasticClient.Indices
+                .GetMappingAsync<StringResponse>(indexName)
+                .ConfigureAwait(false);
+
+            if (!response.Success)
+                throw new ApiException(response);
+
+            CompareMappings<TDocument>(response.Body, indexName);
+        }
+
+        private void CompareMappings<TDocument>(string responseJson, string indexName)
+        {
+            using (var document = JsonDocument.Parse(responseJson))
             {
                 var mappings = document.RootElement
                     .GetProperty(indexName)
@@ -80,6 +118,22 @@ namespace Pocosearch.Internals
             };
 
             var response = elasticClient.Indices.Create<StringResponse>(name, PostData.Serializable(index));
+
+            if (!response.Success)
+                throw new ApiException(response);
+        }
+
+        private async Task CreateIndexAsync<TDocument>(string name)
+        {
+            var properties = GenerateMappings(typeof(TDocument));
+            var index = new 
+            {
+                mappings = new { properties }
+            };
+
+            var response = await elasticClient.Indices
+                .CreateAsync<StringResponse>(name, PostData.Serializable(index))
+                .ConfigureAwait(false);
 
             if (!response.Success)
                 throw new ApiException(response);
