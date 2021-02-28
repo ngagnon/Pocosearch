@@ -9,15 +9,13 @@ using Pocosearch.Utils;
 
 namespace Pocosearch
 {
-    /* @TODO: multi-query */
-    /* @TODO: SetupIndex should automatically add new fields, or crash with an exception
-       if a field was renamed or changed type, etc. */
     public class PocosearchClient : IPocosearchClient
     {
         private readonly IElasticLowLevelClient elasticClient;
         private readonly DocumentIdProvider documentIdProvider;
-        private readonly SearchQueryBuilder searchQueryBuilder;
         private readonly SearchIndexConfigurationProvider searchIndexProvider;
+        private readonly SearchResponseParser searchResponseParser;
+        private readonly SearchQueryBuilder searchQueryBuilder;
         private readonly IndexManager indexManager;
 
         public PocosearchClient() : this(new ElasticLowLevelClient())
@@ -35,6 +33,7 @@ namespace Pocosearch
             documentIdProvider = new DocumentIdProvider();
             searchIndexProvider = new SearchIndexConfigurationProvider();
             searchQueryBuilder = new SearchQueryBuilder(searchIndexProvider);
+            searchResponseParser = new SearchResponseParser(searchIndexProvider);
             indexManager = new IndexManager(elasticClient);
         }
 
@@ -104,10 +103,6 @@ namespace Pocosearch
 
         public IEnumerable<SearchResult> Search(SearchQuery query)
         {
-            var documentTypes = query.Sources.Select(x => x.DocumentType);
-            var indexNameMappings = documentTypes
-                .ToDictionary(x => GetIndexName(x));
-            
             var elasticQuery = searchQueryBuilder.Build(query); 
 
             var searchResponse = elasticClient.Search<StringResponse>(
@@ -118,25 +113,39 @@ namespace Pocosearch
 
             var body = searchResponse.Body;
 
-            using (var document = JsonDocument.Parse(body))
+            return searchResponseParser.Parse(body, query);
+        }
+
+        public IEnumerable<SearchResultCollection> MultiSearch(IEnumerable<SearchQuery> queries)
+        {
+            var queryList = queries.ToList();
+            var elasticQueries = queryList.Select(q => searchQueryBuilder.Build(q)); 
+            var queryPackets = new List<object>();
+
+            foreach (var query in elasticQueries)
             {
-                var hits = document.RootElement
-                    .GetProperty("hits")
-                    .GetProperty("hits")
-                    .EnumerateArray();
+                queryPackets.Add(new {});
+                queryPackets.Add(query);
+            }
 
-                foreach (var hit in hits)
+            var searchResponse = elasticClient.MultiSearch<StringResponse>(
+                PostData.MultiJson(queryPackets));
+
+            if (!searchResponse.Success)
+                throw new ApiException(searchResponse);
+
+
+            using (var document = JsonDocument.Parse(searchResponse.Body))
+            {
+                var responses = document.RootElement
+                    .GetProperty("responses")
+                    .EnumerateArray()
+                    .Select((value, i) => (value, i));
+
+                foreach (var response in responses)
                 {
-                    var indexName = hit.GetProperty("_index").GetString();
-                    var documentType = indexNameMappings[indexName];
-                    var score = hit.GetProperty("_score").GetDouble();
-
-                    yield return new SearchResult
-                    {
-                        DocumentType = documentType,
-                        Score = score,
-                        Document = hit.GetProperty("_source").GetObject(documentType)
-                    };
+                    var query = queryList[response.i];
+                    yield return searchResponseParser.Parse(response.value.GetRawText(), query);
                 }
             }
         }

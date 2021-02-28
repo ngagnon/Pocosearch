@@ -16,5 +16,6 @@ namespace Pocosearch
         void Remove<TDocument>(long documentId);
         void Remove<TDocument>(string documentId);
         IEnumerable<SearchResult> Search(SearchQuery query);
+        IEnumerable<SearchResultCollection> MultiSearch(IEnumerable<SearchQuery> queries);
     }
 }

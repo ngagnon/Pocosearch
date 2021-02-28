@@ -1,4 +1,6 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace Pocosearch
 {
@@ -13,5 +15,25 @@ namespace Pocosearch
     {
         public double Score { get; set; }
         public TDocument Document { get; set; }
+    }
+
+    public class SearchResultCollection : IEnumerable<SearchResult>
+    {
+        private readonly IEnumerable<SearchResult> collection;
+
+        public SearchResultCollection(IEnumerable<SearchResult> collection)
+        {
+            this.collection = collection;
+        }
+
+        public IEnumerator<SearchResult> GetEnumerator()
+        {
+            return collection.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return (collection as IEnumerable).GetEnumerator();
+        }
     }
 }
