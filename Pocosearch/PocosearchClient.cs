@@ -52,7 +52,7 @@ namespace Pocosearch
             var response = elasticClient.Index<StringResponse>(indexName, id, PostData.Serializable(document));
 
             if (!response.Success)
-                throw new PocosearchException(response);
+                throw new ApiException(response);
         }
 
         public void BulkAddOrUpdate<TDocument>(IEnumerable<TDocument> documents)
@@ -75,7 +75,7 @@ namespace Pocosearch
             var response = elasticClient.Bulk<StringResponse>(indexName, PostData.MultiJson(ops));
 
             if (!response.Success)
-                throw new PocosearchException(response);
+                throw new ApiException(response);
         }
 
         public void Remove<TDocument>(Guid documentId)
@@ -99,7 +99,7 @@ namespace Pocosearch
             var response = elasticClient.Delete<StringResponse>(indexName, documentId);
 
             if (!response.Success)
-                throw new PocosearchException(response);
+                throw new ApiException(response);
         }
 
         public IEnumerable<SearchResult> Search(SearchQuery query)
@@ -114,7 +114,7 @@ namespace Pocosearch
                 PostData.Serializable(elasticQuery));
 
             if (!searchResponse.Success)
-                throw new PocosearchException(searchResponse);
+                throw new ApiException(searchResponse);
 
             var body = searchResponse.Body;
 

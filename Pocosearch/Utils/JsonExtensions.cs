@@ -9,5 +9,10 @@ namespace Pocosearch.Utils
         {
             return JsonSerializer.Deserialize(element.GetRawText(), objectType, options);
         }
+
+        public static T GetObject<T>(this JsonElement element, JsonSerializerOptions options = null)
+        {
+            return JsonSerializer.Deserialize<T>(element.GetRawText(), options);
+        }
     }
 }

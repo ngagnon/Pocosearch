@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
+using System.Text.Json;
 using Elasticsearch.Net;
+using Pocosearch.Utils;
 
 namespace Pocosearch.Internals
 {
@@ -21,7 +24,13 @@ namespace Pocosearch.Internals
             if (!indexes.ContainsKey(indexName))
             {
                 if (!IndexExists(indexName))
+                {
                     CreateIndex<TDocument>(indexName);
+                }
+                else
+                {
+                    ValidateMappings<TDocument>(indexName);
+                }
 
                 indexes[indexName] = true;
             }
@@ -32,22 +41,39 @@ namespace Pocosearch.Internals
             var response = elasticClient.Indices.Exists<StringResponse>(indexName);
 
             if (!response.SuccessOrKnownError)
-                throw new PocosearchException(response);
+                throw new ApiException(response);
 
             return response.Success;
         }
 
+        private void ValidateMappings<TDocument>(string indexName)
+        {
+            var response = elasticClient.Indices.GetMapping<StringResponse>(indexName);
+
+            if (!response.Success)
+                throw new ApiException(response);
+
+            using (var document = JsonDocument.Parse(response.Body))
+            {
+                var mappings = document.RootElement
+                    .GetProperty(indexName)
+                    .GetProperty("mappings")
+                    .GetProperty("properties")
+                    .GetObject<Dictionary<string, Mapping>>();
+
+                var desiredMappings = GenerateMappings(typeof(TDocument));
+
+                var mappingsDiffer = desiredMappings.Keys.Count != mappings.Keys.Count 
+                    || desiredMappings.Any(x => !mappings.ContainsKey(x.Key) || mappings[x.Key].type != x.Value.type);
+
+                if (mappingsDiffer)
+                    throw new MismatchedSchemaException(indexName);
+            }
+        }
+
         private void CreateIndex<TDocument>(string name)
         {
-            var properties = new Dictionary<string, object>();
-            var documentProperties = typeof(TDocument).GetProperties();
-
-            foreach (var property in documentProperties)
-            {
-                var type = GetFieldType(property);
-                properties[property.Name] = new { type };
-            }
-
+            var properties = GenerateMappings(typeof(TDocument));
             var index = new 
             {
                 mappings = new { properties }
@@ -56,7 +82,21 @@ namespace Pocosearch.Internals
             var response = elasticClient.Indices.Create<StringResponse>(name, PostData.Serializable(index));
 
             if (!response.Success)
-                throw new PocosearchException(response);
+                throw new ApiException(response);
+        }
+
+        private Dictionary<string, Mapping> GenerateMappings(Type documentType)
+        {
+            var properties = new Dictionary<string, Mapping>();
+            var documentProperties = documentType.GetProperties();
+
+            foreach (var property in documentProperties)
+            {
+                var type = GetFieldType(property);
+                properties[property.Name] = new Mapping { type = type };
+            }
+
+            return properties;
         }
 
         private static string GetFieldType(PropertyInfo propertyInfo)
@@ -81,6 +121,11 @@ namespace Pocosearch.Internals
                 "System.DateTime" => "date",
                 _ => throw new ArgumentException("Unsupported field type", nameof(propertyInfo))
             };
+        }
+
+        private class Mapping
+        {
+            public string type { get; set; }
         }
     }
 }
