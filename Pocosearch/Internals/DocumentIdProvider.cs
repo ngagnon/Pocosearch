@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using Elasticsearch.Net;
 
@@ -20,21 +21,22 @@ namespace Pocosearch.Internals
         private static PropertyInfo FindDocumentIdProperty(Type documentType)
         {
             var properties = documentType.GetProperties();
+            var idProperties = properties
+                .Where(p => p.GetCustomAttribute<DocumentIdAttribute>() != null)
+                .ToList();
 
-            foreach (var property in properties)
-            {
-                var attribute = property.GetCustomAttribute<DocumentIdAttribute>();
+            if (idProperties.Count == 0)
+                throw new InvalidOperationException($"Document type {documentType.FullName} is missing a [DocumentId] attribute");
 
-                if (attribute != null)
-                {
-                    if (!IsValidDocumentId(property.PropertyType))
-                        throw new InvalidOperationException($"Type ${property.PropertyType.FullName} is not a valid document ID");
+            if (idProperties.Count > 1)
+                throw new InvalidOperationException($"Document type {documentType.FullName} has multiple [DocumentId] attributes (there should be only 1)");
 
-                    return property;
-                }
-            }
+            var property = idProperties.First();
 
-            throw new InvalidOperationException($"Document type {documentType.FullName} is missing a [DocumentId] attribute");
+            if (!IsValidDocumentId(property.PropertyType))
+                throw new InvalidOperationException($"Type ${property.PropertyType.FullName} is not a valid document ID");
+
+            return property;
         }
 
         private static bool IsValidDocumentId(Type propertyType)
