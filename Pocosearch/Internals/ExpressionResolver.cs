@@ -58,7 +58,7 @@ namespace Pocosearch.Internals
 
             return new ComparisonFilter
             {
-                FieldName = memberInfo.Name,
+                PropertyName = memberInfo.Name,
                 ComparisonType = GetComparisonType(expression.NodeType),
                 Value = value()
             };

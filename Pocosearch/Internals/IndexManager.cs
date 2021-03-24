@@ -12,11 +12,13 @@ namespace Pocosearch.Internals
     public class IndexManager
     {
         private readonly IElasticLowLevelClient elasticClient;
+        private readonly PocoManager pocoManager;
         private readonly Dictionary<string, bool> indexes;
 
-        public IndexManager(IElasticLowLevelClient elasticClient)
+        public IndexManager(IElasticLowLevelClient elasticClient, PocoManager pocoManager)
         {
             this.elasticClient = elasticClient;
+            this.pocoManager = pocoManager;
             indexes = new Dictionary<string, bool>();
         }
 
@@ -142,32 +144,30 @@ namespace Pocosearch.Internals
         private Dictionary<string, Mapping> GenerateMappings(Type documentType)
         {
             var properties = new Dictionary<string, Mapping>();
-            var documentProperties = documentType.GetProperties();
+            var pocoProperties = pocoManager.GetPocoProperties(documentType);
 
-            foreach (var property in documentProperties)
+            foreach (var property in pocoProperties)
             {
                 var type = GetFieldType(property);
-                properties[property.Name] = new Mapping { type = type };
+                properties[property.FieldName] = new Mapping { type = type };
             }
 
             return properties;
         }
 
-        private static string GetFieldType(PropertyInfo propertyInfo)
+        private static string GetFieldType(PocoProperty property)
         {
-            if (propertyInfo.PropertyType == typeof(string))
+            if (property.Type == typeof(string))
             {
-                var attribute = propertyInfo.GetCustomAttribute<FullTextAttribute>();
-
-                return attribute switch
+                return property switch
                 {
-                    null => "keyword",
+                    { IsFullText: false } => "keyword",
                     { SearchAsYouType: true } => "search_as_you_type",
                     { SearchAsYouType: false } => "text"
                 };
             }
 
-            return propertyInfo.PropertyType.FullName switch
+            return property.Type.FullName switch
             {
                 "System.Int32" => "integer",
                 "System.Int64" => "long",

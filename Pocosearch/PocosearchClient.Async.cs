@@ -21,9 +21,10 @@ namespace Pocosearch
         {
             var indexName = GetIndexName<TDocument>();
             var id = documentIdProvider.GetDocumentId(document);
+            var serialized = pocoManager.Serialize(document);
 
             var response = await elasticClient
-                .IndexAsync<StringResponse>(indexName, id, PostData.Serializable(document))
+                .IndexAsync<StringResponse>(indexName, id, PostData.Serializable(serialized))
                 .ConfigureAwait(false);
 
             if (!response.Success)

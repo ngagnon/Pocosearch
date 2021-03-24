@@ -18,6 +18,7 @@ namespace Pocosearch
         private readonly SearchResponseParser searchResponseParser;
         private readonly SearchQueryBuilder searchQueryBuilder;
         private readonly IndexManager indexManager;
+        private readonly PocoManager pocoManager;
 
         public PocosearchClient() : this(new ElasticLowLevelClient())
         {
@@ -33,9 +34,10 @@ namespace Pocosearch
             this.elasticClient = elasticClient;
             documentIdProvider = new DocumentIdProvider();
             searchIndexProvider = new SearchIndexConfigurationProvider();
-            searchQueryBuilder = new SearchQueryBuilder(searchIndexProvider);
-            searchResponseParser = new SearchResponseParser(searchIndexProvider);
-            indexManager = new IndexManager(elasticClient);
+            pocoManager = new PocoManager();
+            searchQueryBuilder = new SearchQueryBuilder(searchIndexProvider, pocoManager);
+            searchResponseParser = new SearchResponseParser(searchIndexProvider, pocoManager);
+            indexManager = new IndexManager(elasticClient, pocoManager);
         }
 
         public void SetupIndex<TDocument>()
@@ -48,8 +50,9 @@ namespace Pocosearch
         {
             var indexName = GetIndexName<TDocument>();
             var id = documentIdProvider.GetDocumentId(document);
+            var serialized = pocoManager.Serialize(document);
 
-            var response = elasticClient.Index<StringResponse>(indexName, id, PostData.Serializable(document));
+            var response = elasticClient.Index<StringResponse>(indexName, id, PostData.Serializable(serialized));
 
             if (!response.Success)
                 throw new ApiException(response);
@@ -154,13 +157,14 @@ namespace Pocosearch
             foreach (var document in documents)
             {
                 var id = documentIdProvider.GetDocumentId(document);
+                var serialized = pocoManager.Serialize(document);
 
                 ops.Add(new 
                 { 
                     index = new { _index = indexName, _id = id }
                 });
 
-                ops.Add(document);
+                ops.Add(serialized);
             }
 
             return PostData.MultiJson(ops);

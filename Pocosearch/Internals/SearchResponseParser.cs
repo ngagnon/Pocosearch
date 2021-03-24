@@ -9,10 +9,12 @@ namespace Pocosearch.Internals
     public class SearchResponseParser
     {
         private readonly SearchIndexConfigurationProvider searchIndexProvider;
+        private readonly PocoManager pocoManager;
 
-        public SearchResponseParser(SearchIndexConfigurationProvider searchIndexProvider)
+        public SearchResponseParser(SearchIndexConfigurationProvider searchIndexProvider, PocoManager pocoManager)
         {
             this.searchIndexProvider = searchIndexProvider;
+            this.pocoManager = pocoManager;
         }
 
         public SearchResultCollection Parse(string responseJson, SearchQuery query)
@@ -43,7 +45,7 @@ namespace Pocosearch.Internals
                     {
                         DocumentType = documentType,
                         Score = score,
-                        Document = hit.GetProperty("_source").GetObject(documentType)
+                        Document = pocoManager.Deserialize(hit.GetProperty("_source"), documentType)
                     };
                 }
             }

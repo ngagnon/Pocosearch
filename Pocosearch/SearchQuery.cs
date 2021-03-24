@@ -107,7 +107,7 @@ namespace Pocosearch
 
     public class ComparisonFilter : Filter
     {
-        public string FieldName { get; set; }
+        public string PropertyName { get; set; }
         public ComparisonType ComparisonType { get; set; }
         public object Value { get; set; }
     }

@@ -11,10 +11,12 @@ namespace Pocosearch.Internals
     {
         private readonly FullTextFieldProvider fullTextFieldProvider;
         private readonly SearchIndexConfigurationProvider searchIndexProvider;
+        private readonly PocoManager pocoManager;
 
-        public SearchQueryBuilder(SearchIndexConfigurationProvider searchIndexProvider)
+        public SearchQueryBuilder(SearchIndexConfigurationProvider searchIndexProvider, PocoManager pocoManager)
         {
             this.searchIndexProvider = searchIndexProvider;
+            this.pocoManager = pocoManager;
             fullTextFieldProvider = new FullTextFieldProvider();
         }
 
@@ -63,16 +65,16 @@ namespace Pocosearch.Internals
                 return new object[]
                 {
                     indexFilter,
-                    ConvertFilterToQuery(source.DocumentFilter)
+                    ConvertFilterToQuery(source.DocumentFilter, source.DocumentType)
                 };
             }
         }
 
-        private object ConvertFilterToQuery(Filter filter)
+        private object ConvertFilterToQuery(Filter filter, Type documentType)
         {
             if (filter is ComparisonFilter)
             {
-                return ConvertComparisonFilterToQuery((ComparisonFilter)filter);
+                return ConvertComparisonFilterToQuery((ComparisonFilter)filter, documentType);
             }
             else if (filter is FilterCombination)
             {
@@ -99,8 +101,12 @@ namespace Pocosearch.Internals
             }
         }
 
-        private object ConvertComparisonFilterToQuery(ComparisonFilter filter)
+        private object ConvertComparisonFilterToQuery(ComparisonFilter filter, Type documentType)
         {
+            var fieldName = pocoManager
+                .GetPocoProperty(documentType, filter.PropertyName)
+                .FieldName;
+
             switch (filter.ComparisonType)
             {
                 case ComparisonType.LessThan:
@@ -111,7 +117,7 @@ namespace Pocosearch.Internals
                     {
                         range = new Dictionary<string, object>
                         {
-                            [filter.FieldName] = new Dictionary<string, object>
+                            [fieldName] = new Dictionary<string, object>
                             {
                                 [GetRangeKey(filter.ComparisonType)] = filter.Value
                             }
@@ -123,7 +129,7 @@ namespace Pocosearch.Internals
                     {
                         term = new Dictionary<string, object>
                         {
-                            [filter.FieldName] = new
+                            [fieldName] = new
                             {
                                 value = filter.Value
                             }
@@ -139,7 +145,7 @@ namespace Pocosearch.Internals
                             {
                                 term = new Dictionary<string, object>
                                 {
-                                    [filter.FieldName] = new
+                                    [fieldName] = new
                                     {
                                         value = filter.Value
                                     }
@@ -172,9 +178,9 @@ namespace Pocosearch.Internals
                 .Select(x => x.Name)
                 .ToList();
 
-            var fields = fullTextFieldProvider
-                .GetFullTextFields(source.DocumentType)
-                .Where(x => !excludedFields.Contains(x.Name));
+            var fields = pocoManager
+                .GetPocoProperties(source.DocumentType)
+                .Where(x => x.IsFullText && !excludedFields.Contains(x.Name));
 
             var queries = fields
                 .Select(x => GetFieldQuery(query, source, x))
@@ -190,7 +196,7 @@ namespace Pocosearch.Internals
             };
         }
 
-        private object GetFieldQuery(SearchQuery query, Source source, FullTextAttribute field)
+        private object GetFieldQuery(SearchQuery query, Source source, PocoProperty field)
         {
             var boost = source.Fields.Find(x => x.Name == field.Name)?.Boost ?? 1;
             var fuzziness = query.Fuzziness == Fuzziness.Auto ? "AUTO" : (object)query.Fuzziness;
@@ -201,7 +207,7 @@ namespace Pocosearch.Internals
                 {
                     match = new Dictionary<string, object>
                     {
-                        [field.Name] = new
+                        [field.FieldName] = new
                         {
                             query = query.SearchString,
                             fuzziness,
@@ -214,9 +220,9 @@ namespace Pocosearch.Internals
             {
                 var subFields = new List<string> 
                 { 
-                    field.Name, 
-                    $"{field.Name}._2gram", 
-                    $"{field.Name}._3gram" 
+                    field.FieldName, 
+                    $"{field.FieldName}._2gram", 
+                    $"{field.FieldName}._3gram" 
                 };
 
                 return new
