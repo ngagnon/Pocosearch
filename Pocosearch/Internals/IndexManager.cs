@@ -171,9 +171,12 @@ namespace Pocosearch.Internals
             {
                 "System.Int32" => "integer",
                 "System.Int64" => "long",
+                "System.Single" => "float",
+                "System.Double" => "double",
+                "System.Boolean" => "boolean",
                 "System.Guid" => "keyword",
                 "System.DateTime" => "date",
-                _ => throw new ArgumentException("Unsupported field type", nameof(propertyInfo))
+                _ => throw new ArgumentException($"Unsupported field type {property.Type.FullName}", nameof(property))
             };
         }
 

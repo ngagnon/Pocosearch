@@ -25,7 +25,7 @@ namespace Pocosearch
         }
 
         public PocosearchClient(ConnectionConfiguration settings)
-            : this(new ElasticLowLevelClient(settings))
+            : this(new ElasticLowLevelClient(settings.DisableDirectStreaming()))
         {
         }
 
@@ -43,12 +43,24 @@ namespace Pocosearch
         public void SetupIndex<TDocument>()
         {
             var indexName = GetIndexName<TDocument>();
+            documentIdProvider.ValidateDocumentId<TDocument>();
             indexManager.SetupIndex<TDocument>(indexName);
+        }
+
+        public void DeleteIndex<TDocument>()
+        {
+            var indexName = GetIndexName<TDocument>();
+            var response = elasticClient.Indices.Delete<StringResponse>(indexName);
+
+            if (!response.SuccessOrKnownError)
+                throw new ApiException(response);
         }
 
         public void AddOrUpdate<TDocument>(TDocument document)
         {
             var indexName = GetIndexName<TDocument>();
+            indexManager.SetupIndex<TDocument>(indexName);
+
             var id = documentIdProvider.GetDocumentId(document);
             var serialized = pocoManager.Serialize(document);
 
@@ -61,6 +73,8 @@ namespace Pocosearch
         public void BulkAddOrUpdate<TDocument>(IEnumerable<TDocument> documents)
         {
             var indexName = GetIndexName<TDocument>();
+            indexManager.SetupIndex<TDocument>(indexName);
+
             var bulkUpdate = PrepareBulkUpdateQuery<TDocument>(indexName, documents);
             var response = elasticClient.Bulk<StringResponse>(indexName, bulkUpdate);
 
@@ -95,9 +109,10 @@ namespace Pocosearch
         public IEnumerable<SearchResult> Search(SearchQuery query)
         {
             var elasticQuery = searchQueryBuilder.Build(query); 
+            var indexList = searchQueryBuilder.GetIndexNamesCSV(query);
 
             var searchResponse = elasticClient.Search<StringResponse>(
-                PostData.Serializable(elasticQuery));
+                indexList, PostData.Serializable(elasticQuery));
 
             if (!searchResponse.Success)
                 throw new ApiException(searchResponse);
@@ -119,15 +134,25 @@ namespace Pocosearch
             return ParseMultiSearchResponse(searchResponse.Body, queryList);
         }
 
+        public void Refresh<TDocument>()
+        {
+            var indexName = GetIndexName<TDocument>();
+            var response = elasticClient.Indices.Refresh<StringResponse>(indexName);
+
+            if (!response.Success)
+                throw new ApiException(response);
+        }
+
         private PostData PrepareMultiSearchQuery(List<SearchQuery> queryList)
         {
-            var elasticQueries = queryList.Select(q => searchQueryBuilder.Build(q)); 
             var queryPackets = new List<object>();
 
-            foreach (var query in elasticQueries)
+            foreach (var query in queryList)
             {
-                queryPackets.Add(new {});
-                queryPackets.Add(query);
+                var elasticQuery = searchQueryBuilder.Build(query);
+                var indexNames = searchQueryBuilder.GetIndexNames(query);
+                queryPackets.Add(new { index = indexNames });
+                queryPackets.Add(elasticQuery);
             }
 
             return PostData.MultiJson(queryPackets);

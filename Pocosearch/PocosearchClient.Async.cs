@@ -17,9 +17,22 @@ namespace Pocosearch
                 .ConfigureAwait(false);
         }
 
+        public async Task DeleteIndexAsync<TDocument>()
+        {
+            var indexName = GetIndexName<TDocument>();
+            var response = await elasticClient.Indices
+                .DeleteAsync<StringResponse>(indexName)
+                .ConfigureAwait(false);
+
+            if (!response.Success)
+                throw new ApiException(response);
+        }
+
         public async Task AddOrUpdateAsync<TDocument>(TDocument document)
         {
             var indexName = GetIndexName<TDocument>();
+            await indexManager.SetupIndexAsync<TDocument>(indexName).ConfigureAwait(false);
+
             var id = documentIdProvider.GetDocumentId(document);
             var serialized = pocoManager.Serialize(document);
 
@@ -34,6 +47,8 @@ namespace Pocosearch
         public async Task BulkAddOrUpdateAsync<TDocument>(IEnumerable<TDocument> documents)
         {
             var indexName = GetIndexName<TDocument>();
+            await indexManager.SetupIndexAsync<TDocument>(indexName).ConfigureAwait(false);
+
             var bulkUpdate = PrepareBulkUpdateQuery<TDocument>(indexName, documents);
             var response = await elasticClient
                 .BulkAsync<StringResponse>(indexName, bulkUpdate)
@@ -72,9 +87,10 @@ namespace Pocosearch
         public async Task<IEnumerable<SearchResult>> SearchAsync(SearchQuery query)
         {
             var elasticQuery = searchQueryBuilder.Build(query); 
+            var indexList = searchQueryBuilder.GetIndexNamesCSV(query);
 
             var searchResponse = await elasticClient
-                .SearchAsync<StringResponse>(PostData.Serializable(elasticQuery))
+                .SearchAsync<StringResponse>(indexList, PostData.Serializable(elasticQuery))
                 .ConfigureAwait(false);
 
             if (!searchResponse.Success)
@@ -97,6 +113,17 @@ namespace Pocosearch
                 throw new ApiException(searchResponse);
 
             return ParseMultiSearchResponse(searchResponse.Body, queryList);
+        }
+
+        public async Task RefreshAsync<TDocument>()
+        {
+            var indexName = GetIndexName<TDocument>();
+            var response = await elasticClient.Indices
+                .RefreshAsync<StringResponse>(indexName)
+                .ConfigureAwait(false);
+
+            if (!response.Success)
+                throw new ApiException(response);
         }
     }
 }

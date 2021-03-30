@@ -12,6 +12,11 @@ namespace Pocosearch.Internals
         private readonly ConcurrentDictionary<Type, PropertyInfo> cache
             = new ConcurrentDictionary<Type, PropertyInfo>();
 
+        public void ValidateDocumentId<TDocument>()
+        {
+            cache.GetOrAdd(typeof(TDocument), key => FindDocumentIdProperty(key));
+        }
+
         public string GetDocumentId<T>(T document)
         {
             var property = cache.GetOrAdd(typeof(T), key => FindDocumentIdProperty(key));

@@ -1,5 +1,5 @@
-﻿- [Ignore]
-- Review testing methodology -- Fragile Test Problem
-- Could we add caching to ExpressionResolver?
+﻿- Finish writing unit tests
+- Make a bunch of classes internal in the Pocosearch project
+- [Ignore]
 - Finish writing README
 - NuGet

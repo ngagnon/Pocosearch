@@ -9,7 +9,6 @@ namespace Pocosearch.Internals
     /// </summary>
     public class SearchQueryBuilder
     {
-        private readonly FullTextFieldProvider fullTextFieldProvider;
         private readonly SearchIndexConfigurationProvider searchIndexProvider;
         private readonly PocoManager pocoManager;
 
@@ -17,7 +16,22 @@ namespace Pocosearch.Internals
         {
             this.searchIndexProvider = searchIndexProvider;
             this.pocoManager = pocoManager;
-            fullTextFieldProvider = new FullTextFieldProvider();
+        }
+
+        public string GetIndexNamesCSV(SearchQuery query)
+        {
+            var indexNames = query.Sources
+                .Select(source => GetIndexName(source.DocumentType));
+
+            return string.Join(",", indexNames);
+        }
+
+        public string[] GetIndexNames(SearchQuery query)
+        {
+            var indexNames = query.Sources
+                .Select(source => GetIndexName(source.DocumentType));
+
+            return indexNames.ToArray();
         }
 
         public object Build(SearchQuery query)
@@ -84,7 +98,7 @@ namespace Pocosearch.Internals
                     : "should";
 
                 var subQueries = combination.Filters
-                    .Select(ConvertFilterToQuery)
+                    .Select(f => ConvertFilterToQuery(f, documentType))
                     .ToArray();
 
                 return new
