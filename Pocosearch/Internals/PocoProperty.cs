@@ -3,7 +3,7 @@ using System.Reflection;
 
 namespace Pocosearch.Internals
 {
-    public class PocoProperty
+    internal class PocoProperty
     {
         /* Property name (in C# source code) */
         public string Name { get; set; }

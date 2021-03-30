@@ -9,7 +9,7 @@ using Pocosearch.Utils;
 
 namespace Pocosearch.Internals
 {
-    public class IndexManager
+    internal class IndexManager
     {
         private readonly IElasticLowLevelClient elasticClient;
         private readonly PocoManager pocoManager;

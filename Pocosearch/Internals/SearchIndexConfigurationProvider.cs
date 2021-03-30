@@ -5,7 +5,7 @@ using Pocosearch.Utils;
 
 namespace Pocosearch.Internals
 {
-    public class SearchIndexConfigurationProvider
+    internal class SearchIndexConfigurationProvider
     {
         private readonly ConcurrentDictionary<Type, SearchIndexAttribute> cache 
             = new ConcurrentDictionary<Type, SearchIndexAttribute>();

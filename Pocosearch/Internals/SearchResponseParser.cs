@@ -6,7 +6,7 @@ using Pocosearch.Utils;
 
 namespace Pocosearch.Internals
 {
-    public class SearchResponseParser
+    internal class SearchResponseParser
     {
         private readonly SearchIndexConfigurationProvider searchIndexProvider;
         private readonly PocoManager pocoManager;

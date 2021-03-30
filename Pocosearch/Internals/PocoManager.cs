@@ -7,7 +7,7 @@ using Pocosearch.Utils;
 
 namespace Pocosearch.Internals
 {
-    public class PocoManager
+    internal class PocoManager
     {
         private readonly ConcurrentDictionary<Type, PocoInfo> cache
             = new ConcurrentDictionary<Type, PocoInfo>();

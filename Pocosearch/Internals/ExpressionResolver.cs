@@ -5,7 +5,7 @@ using System.Reflection;
 
 namespace Pocosearch.Internals
 {
-    public static class ExpressionResolver
+    internal static class ExpressionResolver
     {
         public static Filter ResolvePredicate(LambdaExpression lambdaExpression)
         {

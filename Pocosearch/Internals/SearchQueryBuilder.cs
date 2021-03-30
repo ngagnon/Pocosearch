@@ -7,7 +7,7 @@ namespace Pocosearch.Internals
     /// <summary>
     /// Translates a Pocosearch SearchQuery into the Elasticsearch query DSL
     /// </summary>
-    public class SearchQueryBuilder
+    internal class SearchQueryBuilder
     {
         private readonly SearchIndexConfigurationProvider searchIndexProvider;
         private readonly PocoManager pocoManager;

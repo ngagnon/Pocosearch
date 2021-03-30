@@ -7,7 +7,7 @@ using Elasticsearch.Net;
 
 namespace Pocosearch.Internals
 {
-    public class DocumentIdProvider
+    internal class DocumentIdProvider
     {
         private readonly ConcurrentDictionary<Type, PropertyInfo> cache
             = new ConcurrentDictionary<Type, PropertyInfo>();
