@@ -15,6 +15,7 @@ namespace Pocosearch.Internals
         public bool SearchAsYouType { get; set; }
         public Type Type { get; set; }
         public PropertyInfo PropertyInfo { get; set; }
+        public bool Ignored { get; set; }
 
         public PocoProperty()
         {}
@@ -25,11 +26,22 @@ namespace Pocosearch.Internals
             Name = prop.Name;
             Type = prop.PropertyType;
 
+            var ignoreAttribute = prop.GetCustomAttribute<IgnoreAttribute>();
             var fullTextAttribute = prop.GetCustomAttribute<FullTextAttribute>();
             var valueAttribute = prop.GetCustomAttribute<ValueAttribute>();
+            var documentIdAttribute = prop.GetCustomAttribute<DocumentIdAttribute>();
 
             if (fullTextAttribute != null && valueAttribute != null)
                 throw new ArgumentException($"Property {prop.Name}: cannot have both [Value] and [FullText] attributes.", nameof(prop));
+
+            if (fullTextAttribute != null && ignoreAttribute != null)
+                throw new ArgumentException($"Property {prop.Name}: cannot have both [Ignore] and [FullText] attributes.", nameof(prop));
+
+            if (valueAttribute != null && ignoreAttribute != null)
+                throw new ArgumentException($"Property {prop.Name}: cannot have both [Ignore] and [Value] attributes.", nameof(prop));
+
+            if (documentIdAttribute != null && ignoreAttribute != null)
+                throw new ArgumentException($"Property {prop.Name}: cannot have both [Ignore] and [DocumentId] attributes.", nameof(prop));
 
             if (fullTextAttribute != null)
                 SearchAsYouType = fullTextAttribute.SearchAsYouType;
@@ -41,6 +53,7 @@ namespace Pocosearch.Internals
             else
                 FieldName = prop.Name;
             
+            Ignored = ignoreAttribute != null;
             IsFullText = fullTextAttribute != null;
         }
     }

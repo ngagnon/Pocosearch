@@ -3,8 +3,7 @@ using System;
 namespace Pocosearch
 {
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
-    public class ValueAttribute : Attribute
+    public class IgnoreAttribute : Attribute
     {
-        public string Name { get; set; }
     }
 }

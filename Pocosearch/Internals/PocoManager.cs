@@ -58,7 +58,12 @@ namespace Pocosearch.Internals
             };
 
             foreach (var property in properties)
-                info.Properties.Add(new PocoProperty(property));
+            {
+                var pocoProp = new PocoProperty(property);
+
+                if (!pocoProp.Ignored)
+                    info.Properties.Add(pocoProp);
+            }
 
             info.NamingPolicy = new FieldMappingPolicy(info.Properties);
 
@@ -82,7 +87,7 @@ namespace Pocosearch.Internals
 
             public override string ConvertName(string name)
             {
-                return mappings[name];
+                return mappings.ContainsKey(name) ? mappings[name] : name;
             }
         }
     }

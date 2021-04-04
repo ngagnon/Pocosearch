@@ -1,3 +1,2 @@
-﻿- [Ignore]
-- Finish writing README
+﻿- Finish writing README
 - NuGet

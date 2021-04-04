@@ -6,6 +6,7 @@ namespace Pocosearch
     /// Can be used to give a unique name to a search index.
     /// By default, the name is the fully qualified name of the class, including assembly.
     ///
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
     public class SearchIndexAttribute : Attribute
     {
         public string Name { get; set; }
