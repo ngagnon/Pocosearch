@@ -11,9 +11,9 @@ It lets you add full-text search capabilities to your web app without much knowl
 
 @TODO: Show nuget & dotnet commands, with link to NuGet.org
 
-## 2. Annotate a POCO
+## 2. Create a POCO
 
-Create a POCO (Plain Old C# Object) for each type of document you'll want to store in Elasticsearch.
+Create a POCO ([Plain Old CLR Object](https://en.wikipedia.org/wiki/Plain_old_CLR_object)) for each type of document you'll want to store in Elasticsearch.
 
 At a minimum, each POCO should have an ID property, which will be used to uniquely identify each document. This property is marked with a `[DocumentId]` attribute.
 
@@ -44,7 +44,8 @@ Check out [defining POCOs](docs/defining-pocos.md) to learn more.
 Create an instance of the `PocosearchClient`, passing in a `ConnectionConfiguration`:
 
 ```csharp
-// Refer to https://www.elastic.co/guide/en/elasticsearch/client/net-api/current/elasticsearch-net-getting-started.html#_connecting to learn more
+// Learn more about connection settings:
+/// https://www.elastic.co/guide/en/elasticsearch/client/net-api/current/elasticsearch-net-getting-started.html#_connecting
 var uri = new Uri("http://localhost:9200");
 var pool = new SingleNodeConnectionPool(uri);
 var config = new ConnectionConfiguration(pool);
@@ -56,7 +57,7 @@ For optimal performance, it's best to use a single PocosearchClient instance thr
 
 ## 4. Add Documents to the Index
 
-To add a single document to Elastisearch, use the `AddOrUpdate` method:
+To add a single document to Elastisearch, call `AddOrUpdate`:
 
 ```csharp
 var article = new Article
@@ -70,7 +71,7 @@ var article = new Article
 pocosearch.AddOrUpdate(article); // or AddOrUpdateAsync();
 ```
 
-To add a bunch of documents in bulk, it's best to use `BulkAddOrUpdate` instead:
+To add a bunch of documents at once, it's best to use `BulkAddOrUpdate` instead:
 
 ```csharp
 List<Article> someArticles = ...;
@@ -79,11 +80,9 @@ pocosearch.BulkAddOrUpdate(someArticles); // or BulkAddOrUpdateAsync();
 
 Pocosearch will automatically setup the Elasticsearch index for this document type when you first call `AddOrUpdate`. Alternatively, you can call `SetupIndex` in your app startup to prepare the index at your own convenience.
 
-**N.B. newly added documents are not immediately searchable!** It may take a second or two for them to be made searchable. If you want to make them searchable immediately, call the `Refresh` method on the index.
+**N.B. newly added documents are not immediately searchable!** It may take a second or two for Elasticsearch to process them. If you want to make them searchable immediately, call the `Refresh<TDocument>()` method.
 
 ## 5. Search!
-
-Simply create a `SearchQuery`, and execute it with the `PocosearchClient`:
 
 ```csharp
 var query = new SearchQuery("brown fox");
@@ -101,16 +100,16 @@ Check out [building search queries](doc/search-queries.md) to learn more.
 
 # Documentation
 
-- Defining POCOs
-    - Supported data types (for ID & values)
-    - Renaming index & fields
+- [Defining POCOs](docs/defining-pocos.md)
+    - Supported data types
+    - Renaming indexes & fields
     - Ignoring field
     - Search-as-you-type
 
-- Building search queries
-    - Limiting number of search results
+- [Building search queries](docs/search-queries.md)
+    - Limiting the number of search results
     - Searching from multiple sources
     - Filtering search results
-    - Exclude field from search
-    - Boost field score
+    - Excluding a field from the search
+    - Boosting a field's score
     - Combining multiple queries
