@@ -1,36 +1,116 @@
-Pocosearch is an easy-to-use library for Elasticsearch,  kind of like what EasyNetQ does for RabbitMQ
+Pocosearch is an easy-to-use Elasticsearch client for .NET.
 
-Add full-text search capabilities to your web app!
+@TODO: description
+It makes it very easy to add full-text search capabilities to ASP.NET apps by abstracting away most of the nitty gritty details of Elasticsearch.
 
-1. Create POCO
-Annotate ID field with [DocumentId]
-Annotate full text fields with [FullText]
+It lets you add full-text search capabilities to your web app without much knowledge of Elasticsearch.
 
-2. Add to index
+# Getting Started
 
-AddOrUpdate for single record
-BuldAddOrUpdate for multiple
+## 1. Install the NuGet package
 
-N.B. records aren't immediately searchable, use Refresh to make sure!
+@TODO: Show nuget & dotnet commands, with link to NuGet.org
 
-3. Search!
-Search string
-Sources
-GetDocumentsOfType
+## 2. Annotate a POCO
 
-Extras:
+Create a POCO (Plain Old C# Object) for each type of document you'll want to store in Elasticsearch.
 
-- Supported data types (for ID & values)
-- Search-as-you-type
-- Renaming index & fields
-- Ignoring field
-- Filtering search results
-- Limiting number of search results
-- Async methods
-- Searching from multiple sources
-- Exclude field from search
-- Boost field score
-- Combining multiple queries
-- Setup index without adding to it
-- Best practices
-    - Use a single PocosearchClient instance!
+At a minimum, each POCO should have an ID property, which will be used to uniquely identify each document. This property is marked with a `[DocumentId]` attribute.
+
+You'll then want to mark all the properties that should be searchable with the `[FullText]` attribute.
+
+For example:
+
+```csharp
+public class Article
+{
+    [DocumentId]
+    public int Id { get; set; }
+
+    [FullText]
+    public string Title { get; set; }
+
+    [FullText]
+    public string Content { get; set; }
+
+    public DateTime PublishedOn { get; set; }
+}
+```
+
+Check out [defining POCOs](docs/defining-pocos.md) to learn more.
+
+## 3. Connect to Elasticsearch
+
+Create an instance of the `PocosearchClient`, passing in a `ConnectionConfiguration`:
+
+```csharp
+// Refer to https://www.elastic.co/guide/en/elasticsearch/client/net-api/current/elasticsearch-net-getting-started.html#_connecting to learn more
+var uri = new Uri("http://localhost:9200");
+var pool = new SingleNodeConnectionPool(uri);
+var config = new ConnectionConfiguration(pool);
+
+var pocosearch = new PocosearchClient(config);
+```
+
+For optimal performance, it's best to use a single PocosearchClient instance throughout the lifetime of your application.
+
+## 4. Add Documents to the Index
+
+To add a single document to Elastisearch, use the `AddOrUpdate` method:
+
+```csharp
+var article = new Article
+{
+    Id = 1,
+    Title = "Hello, world",
+    Content = "...",
+    PublishedOn = DateTime.Now
+};
+
+pocosearch.AddOrUpdate(article); // or AddOrUpdateAsync();
+```
+
+To add a bunch of documents in bulk, it's best to use `BulkAddOrUpdate` instead:
+
+```csharp
+List<Article> someArticles = ...;
+pocosearch.BulkAddOrUpdate(someArticles); // or BulkAddOrUpdateAsync();
+```
+
+Pocosearch will automatically setup the Elasticsearch index for this document type when you first call `AddOrUpdate`. Alternatively, you can call `SetupIndex` in your app startup to prepare the index at your own convenience.
+
+**N.B. newly added documents are not immediately searchable!** It may take a second or two for them to be made searchable. If you want to make them searchable immediately, call the `Refresh` method on the index.
+
+## 5. Search!
+
+Simply create a `SearchQuery`, and execute it with the `PocosearchClient`:
+
+```csharp
+var query = new SearchQuery("brown fox");
+query.AddSource<Article>();
+
+var results = pocosearch.Search(query); // or SearchAsync();
+var articles = results.GetDocumentsOfType<Article>();
+
+// each search result is an object with:
+//     Score = search score,
+//     Document = the corresponding article
+```
+
+Check out [building search queries](doc/search-queries.md) to learn more.
+
+# Documentation
+
+- Defining POCOs
+    - Supported data types (for ID & values)
+    - Renaming index & fields
+    - Ignoring field
+    - Search-as-you-type
+
+- Building search queries
+    - Limiting number of search results
+    - Searching from multiple sources
+    - Filtering search results
+    - Exclude field from search
+    - Boost field score
+    - Combining multiple queries
