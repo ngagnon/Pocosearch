@@ -72,7 +72,7 @@ source.Filter(x =>
 );
 ```
 
-## Excluding a Field from the Search
+## Excluding a Field from a Search
 
 Given the following POCO:
 
