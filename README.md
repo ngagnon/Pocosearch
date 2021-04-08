@@ -97,7 +97,7 @@ var articles = results.GetDocumentsOfType<Article>();
 // }
 ```
 
-Check out [building search queries](doc/search-queries.md) to learn more.
+Check out [building search queries](docs/search-queries.md) to learn more.
 
 # Documentation
 

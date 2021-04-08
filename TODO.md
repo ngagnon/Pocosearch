@@ -1,2 +1,1 @@
-﻿- Finish writing README
-- NuGet
+﻿- NuGet
