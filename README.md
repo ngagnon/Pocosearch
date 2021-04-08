@@ -1,8 +1,8 @@
 Pocosearch is an easy-to-use Elasticsearch client for .NET.
 
-It was designed specifically for Web apps, where much of Elasticsearch's power and flexibility is unnecessary.
+It was designed specifically for web apps, where much of Elasticsearch's power and flexibility is often unnecessary.
 
-Its convenient, straightforward API allows you to easily add full-text search capability to any part of your app without much hassle.
+Its straightforward API allows you to easily add full-text search capability to any part of your app without much hassle.
 
 # Getting Started
 
@@ -54,7 +54,7 @@ var pocosearch = new PocosearchClient(config);
 
 For optimal performance, it's best to use a single PocosearchClient instance throughout the lifetime of your application.
 
-## 4. Add Documents to the Index
+## 4. Add Some Documents to the Index
 
 To add a single document to Elastisearch, call `AddOrUpdate`:
 
