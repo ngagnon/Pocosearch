@@ -19,6 +19,7 @@ namespace Pocosearch
         void Remove<TDocument>(string documentId);
         IEnumerable<SearchResult> Search(SearchQuery query);
         IEnumerable<SearchResultCollection> MultiSearch(IEnumerable<SearchQuery> queries);
+        IEnumerable<SearchResultCollection> MultiSearch(params SearchQuery[] queries);
         void Refresh<TDocument>();
 
         Task SetupIndexAsync<TDocument>();
@@ -31,6 +32,7 @@ namespace Pocosearch
         Task RemoveAsync<TDocument>(string documentId);
         Task<IEnumerable<SearchResult>> SearchAsync(SearchQuery query);
         Task<IEnumerable<SearchResultCollection>> MultiSearchAsync(IEnumerable<SearchQuery> queries);
+        Task<IEnumerable<SearchResultCollection>> MultiSearchAsync(params SearchQuery[] queries);
         Task RefreshAsync<TDocument>();
     }
 }

@@ -122,6 +122,11 @@ namespace Pocosearch
             return searchResponseParser.Parse(body, query);
         }
 
+        public IEnumerable<SearchResultCollection> MultiSearch(params SearchQuery[] queries)
+        {
+            return MultiSearch((IEnumerable<SearchQuery>)queries);
+        }
+
         public IEnumerable<SearchResultCollection> MultiSearch(IEnumerable<SearchQuery> queries)
         {
             var queryList = queries.ToList();

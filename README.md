@@ -1,9 +1,8 @@
 Pocosearch is an easy-to-use Elasticsearch client for .NET.
 
-@TODO: description
-It makes it very easy to add full-text search capabilities to ASP.NET apps by abstracting away most of the nitty gritty details of Elasticsearch.
+It was designed specifically for Web apps, where much of Elasticsearch's power and flexibility is unnecessary.
 
-It lets you add full-text search capabilities to your web app without much knowledge of Elasticsearch.
+Its convenient, straightforward API allows you to easily add full-text search capability to any part of your app without much hassle.
 
 # Getting Started
 

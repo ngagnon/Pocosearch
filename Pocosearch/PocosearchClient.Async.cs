@@ -101,6 +101,11 @@ namespace Pocosearch
             return searchResponseParser.Parse(body, query);
         }
 
+        public Task<IEnumerable<SearchResultCollection>> MultiSearchAsync(params SearchQuery[] queries)
+        {
+            return MultiSearchAsync((IEnumerable<SearchQuery>)queries);
+        }
+
         public async Task<IEnumerable<SearchResultCollection>> MultiSearchAsync(IEnumerable<SearchQuery> queries)
         {
             var queryList = queries.ToList();
