@@ -45,7 +45,7 @@ Create an instance of the `PocosearchClient`, passing in a `ConnectionConfigurat
 
 ```csharp
 // Learn more about connection settings:
-/// https://www.elastic.co/guide/en/elasticsearch/client/net-api/current/elasticsearch-net-getting-started.html#_connecting
+// https://www.elastic.co/guide/en/elasticsearch/client/net-api/current/elasticsearch-net-getting-started.html#_connecting
 var uri = new Uri("http://localhost:9200");
 var pool = new SingleNodeConnectionPool(uri);
 var config = new ConnectionConfiguration(pool);
@@ -80,7 +80,7 @@ pocosearch.BulkAddOrUpdate(someArticles); // or BulkAddOrUpdateAsync();
 
 Pocosearch will automatically setup the Elasticsearch index for this document type when you first call `AddOrUpdate`. Alternatively, you can call `SetupIndex` in your app startup to prepare the index at your own convenience.
 
-**N.B. newly added documents are not immediately searchable!** It may take a second or two for Elasticsearch to process them. If you want to make them searchable immediately, call the `Refresh<TDocument>()` method.
+**N.B. newly added documents are not immediately searchable!** It may take a second or two for Elasticsearch to process them. If you want to make them searchable immediately, call the `Refresh` method.
 
 ## 5. Search!
 
@@ -91,9 +91,11 @@ query.AddSource<Article>();
 var results = pocosearch.Search(query); // or SearchAsync();
 var articles = results.GetDocumentsOfType<Article>();
 
-// each search result is an object with:
+// Each search result is an object with:
+// {
 //     Score = search score,
 //     Document = the corresponding article
+// }
 ```
 
 Check out [building search queries](doc/search-queries.md) to learn more.
@@ -101,15 +103,15 @@ Check out [building search queries](doc/search-queries.md) to learn more.
 # Documentation
 
 - [Defining POCOs](docs/defining-pocos.md)
-    - Supported data types
-    - Renaming indexes & fields
-    - Ignoring field
-    - Search-as-you-type
+    - [Supported data types](docs/defining-pocos.md#supported-data-types)
+    - [Renaming indexes & fields](docs/defining-pocos.md#renaming-indexes-and-fields)
+    - [Ignoring a field](docs/defining-pocos.md#ignoring-a-field)
+    - [Enabling search-as-you-type](docs/defining-pocos.md#enabling-search-as-you-type)
 
 - [Building search queries](docs/search-queries.md)
-    - Limiting the number of search results
-    - Searching from multiple sources
-    - Filtering search results
-    - Excluding a field from the search
-    - Boosting a field's score
-    - Combining multiple queries
+    - [Limiting the number of search results](docs/search-queries.md#limiting-the-number-of-search-results)
+    - [Searching from multiple sources](docs/search-queries.md#searching-from-multiple-sources)
+    - [Filtering search results](docs/search-queries.md#filtering-search-results)
+    - [Excluding a field from the search](docs/search-queries.md#excluding-a-field-from-the-search)
+    - [Boosting a field's score](docs/search-queries.md#boosting-a-fields-score)
+    - [Combining multiple queries](docs/search-queries.md#combining-multiple-queries)
