@@ -8,7 +8,17 @@ Its straightforward API allows you to easily add full-text search capability to 
 
 ## 1. Install the NuGet package
 
-@TODO: Show nuget & dotnet commands, with link to NuGet.org
+Via the .NET CLI:
+
+```
+dotnet add package Pocosearch
+```
+
+Or the NuGet console:
+
+```
+Install-Package Pocosearch 
+```
 
 ## 2. Create a POCO
 
